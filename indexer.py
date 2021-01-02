@@ -1,4 +1,5 @@
 # DO NOT MODIFY CLASS NAME
+import math
 from collections import OrderedDict, Counter
 
 import numpy as np
@@ -28,6 +29,7 @@ class Indexer:
         self.posting_list = []
         self.accumulative_size = 0
         self.max_accumulative = 4000000
+        self.num_of_docs = 0
         self.posting_dict = {}
         self.postingDict_size = 200000
         self.counter_of_postings = 0
@@ -85,10 +87,10 @@ class Indexer:
         # represents the document in 25 dimensional space(GloVe)
         if is_covid:
             self.document_posting_covid[document.tweet_id] = (document_vec, document_date)
-            self.document_dict[document.tweet_id] = "doc_posting_covid" + str(self.doc_posting_covid_counter)
+            self.document_dict[document.tweet_id] = ["doc_posting_covid" + str(self.doc_posting_covid_counter), 0]
         else:
             self.doc_posting_dict[document.tweet_id] = (document_vec, document_date)
-            self.document_dict[document.tweet_id] = "doc_posting"+str(self.doc_posting_counter)
+            self.document_dict[document.tweet_id] = ["doc_posting"+str(self.doc_posting_counter), 0]
 
         if len(self.doc_posting_dict) == 100000:
             self.save_doc_posting()
@@ -112,7 +114,7 @@ class Indexer:
                                 document.doc_length,  # total number of words in tweet
                                 document.max_tf,  # number of occurrences of most common term in tweet
                                 document.unique_terms,  # number of unique words in tweet
-                                document_dictionary[term],  # number of times term is in tweet - tf!
+                                document_dictionary[term]/document.doc_length,  #normalized number of times term is in tweet - normalized tf!
                                 )
                 # if there're no documents for the current term, insert the first document
                 if self.posting_dict[term] is None:
@@ -210,8 +212,8 @@ class Indexer:
                         tuples_to_merge.append(saved_chunks[idx][term_idx_in_chunk])
                         indexes_of_the_indexes_to_increase.append(idx)
 
-                merged_tuple = self.merge_terms_into_one(tuples_to_merge)
-                appended_term = merged_tuple[0]
+                merged_list = self.merge_terms_into_one(tuples_to_merge)
+                appended_term = merged_list[0]
                 should_append = True
                 # if it is a named entity and it exists in less than 2 tweets, erase this term.
                 if appended_term in self.entities_dict and self.entities_dict[appended_term] < 2:
@@ -219,18 +221,30 @@ class Indexer:
                     self.inverted_idx.pop(appended_term, None)
                 # update terms with capital letters
                 if appended_term in self.global_capitals and self.global_capitals[appended_term]:
-                    merged_tuple = (appended_term.upper(), merged_tuple[1])
+                    merged_list = [appended_term.upper(), merged_list[1]]
                     inverted_val = self.inverted_idx[appended_term]
                     self.inverted_idx.pop(appended_term, None)
                     self.inverted_idx[appended_term.upper()] = inverted_val
-                appended_term = merged_tuple[0]
+                appended_term = merged_list[0]
                 if appended_term in self.inverted_idx and self.inverted_idx[appended_term][0] == 1:
                     should_append = False
                     self.inverted_idx.pop(appended_term, None)
                 if should_append:
-                    self.accumulative_size += len(merged_tuple[1])
-                    building_list.append(merged_tuple)
-                    self.inverted_idx[merged_tuple[0]][1] = str(self.counter_of_postings)
+                    self.accumulative_size += len(merged_list[1])
+                    idf = self.calculate_idf(merged_list[0])
+                    merged_dict = {}
+                    for idx,tweet_tuple in enumerate(merged_list[1]):
+                        tf_idf = tweet_tuple[4]*idf
+                        new_tweet_tuple = (tweet_tuple[1],
+                                           tweet_tuple[2],
+                                           tweet_tuple[3],
+                                           tf_idf)
+                        merged_list[1][idx] = new_tweet_tuple
+                        merged_dict[tweet_tuple[0]] = new_tweet_tuple
+                        self.document_dict[tweet_tuple[0]][1] += math.pow(tf_idf, 2)
+                    merged_list[1] = merged_dict
+                    building_list.append(merged_list)
+                    self.inverted_idx[merged_list[0]][1] = str(self.counter_of_postings)
 
                 # increase the indices that the tuple at the specific location have been inserted to the new posting
                 for idx in indexes_of_the_indexes_to_increase:
@@ -272,8 +286,8 @@ class Indexer:
         :return:
         """
         if len(tuples_to_merge) == 1:
-            return tuples_to_merge[0]
-        ret_tuple = (tuples_to_merge[0][0], [])
+            return list(tuples_to_merge[0])
+        ret_tuple = [tuples_to_merge[0][0], []]
         for tup in tuples_to_merge:
             ret_tuple[1].extend(tup[1])
         ret_tuple[1].sort(key=lambda x: x[0])
@@ -312,6 +326,18 @@ class Indexer:
             return -1
         return load_list
 
+    def calculate_idf(self, term):
+        """
+        calculates idf of term
+        :param term_data: term information
+        :return:
+        """
+        # to calc idf
+        n = self.num_of_docs
+        df = self.inverted_idx[term][0]
+        idf = math.log10(n / df)
+        return idf
+
     def delete_dict_after_saving(self):
         del self.document_dict
         del self.doc_posting_dict
@@ -330,3 +356,6 @@ class Indexer:
 
     def set_glove_dict(self, model):
         self.glove_dict = model
+
+    def set_num_of_doc(self, number_of_documents):
+        self.num_of_docs = number_of_documents

@@ -49,10 +49,10 @@ class Searcher:
         query_as_list = self._parser.parse_sentence(query)
         # searcher = Searcher(self._parser, self._indexer, self.glove_dict)
         # s = time.time()
-        relevant_docs, query_glove_vec, query_vec = self.relevant_docs_from_posting(query_as_list[0])
+        relevant_docs, query_glove_vec, square_w_iq = self.relevant_docs_from_posting(query_as_list[0])
         # print("Time for searcher: {}".format(time.time() - s))
-        # s=time.time()
-        ranked_docs = self.ranker.rank_relevant_doc(relevant_docs, query_glove_vec, query_vec)
+        # s=time.time()[
+        ranked_docs = self.ranker.rank_relevant_doc(relevant_docs, query_glove_vec, square_w_iq)
         # print("Time for ranker: {}".format(time.time() - s))
         top_k = self.ranker.retrieve_top_k(ranked_docs, k)
         return top_k
@@ -65,17 +65,17 @@ class Searcher:
         :param query_as_list: parsed query tokens
         :return: dictionary of relevant documents mapping doc_id to document frequency.
         """
-        qterm_to_idf = {}
+        # qterm_to_idf = {}
         query_glove_vec = np.zeros(shape=25)
-        query_vec = np.zeros(shape=(2, len(query_as_list)))
+        # query_vec = np.zeros(shape=(2, len(query_as_list)))
         for idx, term in enumerate(query_as_list):
             if term in self.glove_dict:
                 query_glove_vec += self.glove_dict[term]
             try:  # an example of checks that you have to do
                 if term in self.inverted_index:
 
-                    qterm_to_idf[term] = self.calculate_idf(self.inverted_index[term])
-                    query_vec[1, idx] = qterm_to_idf[term]
+                    # qterm_to_idf[term] = self.calculate_idf(self.inverted_index[term])
+                    # query_vec[1, idx] = qterm_to_idf[term]
                     if term not in self.term_to_doclist:
                         # all documents having this term is not in the term dict,
                         # so load the appropriate postings and load them
@@ -95,7 +95,7 @@ class Searcher:
                         self.term_to_doclist[term][0].add(idx)
 
                 else:  # term is un-known, so
-                    qterm_to_idf[term] = 0
+                    # qterm_to_idf[term] = 0
                     doc_list = None
                     idx_set = {idx}
                     self.term_to_doclist[term] = [idx_set, doc_list]
@@ -111,35 +111,40 @@ class Searcher:
         pre_doc_dict_counter = Counter()
 
         relevant_docs = {}
+        w_iq_square = 0
         for term_to_docs in self.term_to_doclist.items():
             term = term_to_docs[0]
 
             term_indices = term_to_docs[1][0]
+            w_iq_square += math.pow(len(term_indices), 2)
             doc_list = term_to_docs[1][1]
 
             try:
                 if doc_list is not None:
-                    for idx, doc_tuple in enumerate(doc_list):
+                    for doc_tuple in doc_list.items():
+
                         tweet_id = doc_tuple[0]
-                        tweet_doc_length = doc_tuple[1]
+                        tweet_details = doc_tuple[1]
+                        tweet_doc_length = tweet_details[0]
                         pre_doc_dict_counter[tweet_id] += 1
                         # if tweet_id not in relevant_docs:
                         if tweet_id not in pre_doc_dict:
                             # example - > tf_idf_vec
                             # [[tf1, tf2...]
                             #  [idf1, idf2...]]
-                            tf_idf_vec = np.zeros(shape=(2, len(query_as_list)))
+                            tf_idf = 0
                             # loaded_dict = utils.load_dict()
-                            pre_doc_dict[tweet_id] = (tf_idf_vec, tweet_doc_length)
+                            pre_doc_dict[tweet_id] = [tf_idf, tweet_doc_length]
                             # for i in range(idx+1, len(doc_list)):
 
-                        vec = pre_doc_dict[tweet_id][0]
-                        tf = self.calculate_tf(doc_tuple)
-                        for index in term_indices:
-                            vec[0, index] = tf
+                        # vec = pre_doc_dict[tweet_id][0]
+                        # tf = self.calculate_tf(doc_tuple)
+                        # for index in term_indices:
+                        #     vec[0, index] = tf
                         for idx, q_term in enumerate(query_as_list):
-                            vec[1, idx] = qterm_to_idf[q_term]
-                            query_vec[0, idx] = len(self.term_to_doclist[q_term][0]) / len(query_as_list)
+                            # vec[1, idx] = qterm_to_idf[q_term]
+                            pre_doc_dict[tweet_id][0] += self.term_to_doclist[q_term][1][tweet_id][3]*len(term_indices)
+                            # query_vec[0, idx] = len(self.term_to_doclist[q_term][0]) / len(query_as_list)
 
                         if tweet_id not in relevant_docs and pre_doc_dict_counter[
                             tweet_id] >= min_num_of_words_to_relevent:
@@ -149,7 +154,7 @@ class Searcher:
             except:
                 print('term {} not found in posting'.format(term))
 
-        return relevant_docs, query_glove_vec, query_vec
+        return relevant_docs, query_glove_vec, math.sqrt(w_iq_square)
 
     def calculate_tf(self, tweet_term_tuple):
         """
@@ -164,17 +169,17 @@ class Searcher:
 
         return tf
 
-    def calculate_idf(self, term_data):
-        """
-        calculates idf of term
-        :param term_data: term information
-        :return:
-        """
-        # to calc idf
-        n = self.number_of_docs
-        df = term_data[0]
-        idf = math.log10(n / df)
-        return idf
+    # def calculate_idf(self, term_data):
+    #     """
+    #     calculates idf of term
+    #     :param term_data: term information
+    #     :return:
+    #     """
+    #     # to calc idf
+    #     n = self.number_of_docs
+    #     df = term_data[0]
+    #     idf = math.log10(n / df)
+    #     return idf
 
     def calculate_idf_BM25(self, term_data):
         """

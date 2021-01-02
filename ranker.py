@@ -14,7 +14,7 @@ class Ranker:
         self.config = config
 
     # @staticmethod
-    def rank_relevant_doc(self, relevant_doc, query_glove_vec, query_tf_idf_vec):
+    def rank_relevant_doc(self, relevant_doc, query_glove_vec, square_w_iq):
         """
         This function provides rank for each relevant document and sorts them by their scores.
         The current score considers solely the number of terms shared by the tweet_id (full_text) and query.
@@ -25,24 +25,25 @@ class Ranker:
         key_list = list(relevant_doc.keys())
         # for tweet_id, tuple_vec_doclength in relevant_doc.items():
         for idx, tweet_id in enumerate(key_list):
-            tuple_vec_doclength = relevant_doc[tweet_id]
+            list_tfidf_doclength = relevant_doc[tweet_id]
             # if self.document_dict[tweet_id] not in self.loaded_doc_postings:
             if tweet_id not in self.loaded_doc_postings:
-                loaded_dict = utils.load_dict(self.document_dict[tweet_id], self.config.get_out_path())
+                loaded_dict = utils.load_dict(self.document_dict[tweet_id][0], self.config.get_out_path())
                 # self.loaded_doc_postings[self.document_dict[tweet_id]] = loaded_dict
                 self.loaded_doc_postings[tweet_id] = loaded_dict[tweet_id]
                 for i in range(idx+1, len(key_list)):
                     if key_list[i] in loaded_dict:
                         self.loaded_doc_postings[key_list[i]] = loaded_dict[key_list[i]]
 
-            bm25_vec = tuple_vec_doclength[0]
-            doc_length = tuple_vec_doclength[1]
+            tf_idf = list_tfidf_doclength[0]
+            tweet_part_denominator_cosine = self.document_dict[tweet_id][1]
+            doc_length = list_tfidf_doclength[1]
             # glove_vec = tuple_vec_doclength[2]
             # glove_vec = self.loaded_doc_postings[self.document_dict[tweet_id]][tweet_id][0]
             glove_vec = self.loaded_doc_postings[tweet_id][0]
             # tweet_date = self.loaded_doc_postings[self.document_dict[tweet_id]][tweet_id][1]
             tweet_date = self.loaded_doc_postings[tweet_id][1]
-            calculated_score = self.calc_score(bm25_vec, doc_length, glove_vec, query_glove_vec, query_tf_idf_vec)
+            calculated_score = self.calc_score(tf_idf, doc_length, glove_vec, query_glove_vec, square_w_iq, tweet_part_denominator_cosine)
             tweet_tuple = (calculated_score, tweet_id, tweet_date)
             bisect.insort(ret, tweet_tuple)
 
@@ -62,7 +63,7 @@ class Ranker:
 
         return sorted(sorted_relevant_doc, key=lambda x: (x[0], x[2]))[-k:]
 
-    def calc_score(self, bm25_vec, doc_length, glove_vec, query_glove_vec, querty_tf_idf_vec):
+    def calc_score(self, tf_idf, doc_length, glove_vec, query_glove_vec, sqaure_w_iq, tweet_part_denominator_cosine):
         """
 
         :param query_vec:
@@ -74,34 +75,39 @@ class Ranker:
         :return: calculated score of similarity between the represented tweet and the query
         """
         w_cos_weight = 0.9
-        bm25_weight = 0.05
         glove_weight = 0.05
 
-        word_cosine = w_cos_weight * self.cosine(bm25_vec[0] * bm25_vec[1], querty_tf_idf_vec[0] * querty_tf_idf_vec[1])
-        bm25_score = bm25_weight * self.calc_BM25(bm25_vec, doc_length)
-        glove_cosine = glove_weight * self.cosine(glove_vec, query_glove_vec)
+        word_cosine = w_cos_weight * self.cosine(tf_idf, sqaure_w_iq, tweet_part_denominator_cosine)
+        # bm25_score = bm25_weight * self.calc_BM25(bm25_vec, doc_length)
+        glove_cosine = glove_weight * self.glove_cosine(glove_vec, query_glove_vec)
 
-        score = word_cosine + glove_cosine + bm25_score
+        score = word_cosine + glove_cosine
 
         # if score > 0.85:
         # print("{} : word cosine: {} , glove cosine: {}, total score {}".format(tweet_id,word_cosine,glove_cosine, score))
 
         return score
 
-    def calc_BM25(self, vec, doc_length):
-        # BM25 score calculation
-        score = 0
-        k = 1.2
-        b = 0.75
-        for column in vec.T:
-            idf = column[1]
-            tf = column[0]
+    # def calc_BM25(self, vec, doc_length):
+    #     # BM25 score calculation
+    #     score = 0
+    #     k = 1.2
+    #     b = 0.75
+    #     for column in vec.T:
+    #         idf = column[1]
+    #         tf = column[0]
+    #
+    #         score += (idf * tf * (k + 1)) / (tf + k * (1 - b + b * (doc_length / self.avg_length_per_doc)))
+    #
+    #     return score
 
-            score += (idf * tf * (k + 1)) / (tf + k * (1 - b + b * (doc_length / self.avg_length_per_doc)))
+    def cosine(self, numerator, query_part_denominator, tweet_part_denominator):
+        denominator = query_part_denominator * tweet_part_denominator
+        if denominator == 0 or numerator == 0:
+            return 0
+        return numerator / denominator
 
-        return score
-
-    def cosine(self, v1, v2):
+    def glove_cosine(self, v1, v2):
         numenator = np.dot(v1, v2)
         denominator = norm(v1) * norm(v2)
         if denominator == 0 or numenator == 0:

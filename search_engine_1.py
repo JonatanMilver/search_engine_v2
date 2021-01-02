@@ -75,14 +75,16 @@ class SearchEngineGlove:
         self._indexer.save_postings()
         if len(self._indexer.doc_posting_dict) > 0:
             self._indexer.save_doc_posting()
-        utils.save_dict(self._indexer.document_dict, "documents_dict", config.get_out_path())
+
         if len(self._indexer.document_posting_covid) > 0:
             self._indexer.save_doc_covid()
 
-        self._indexer.delete_dict_after_saving()
+        self._indexer.set_num_of_doc(number_of_documents)
 
         # merges posting files.
         self._indexer.merge_chunks()
+        utils.save_dict(self._indexer.document_dict, "documents_dict", config.get_out_path())
+        self._indexer.delete_dict_after_saving()
         utils.save_dict(self._indexer.inverted_idx, "inverted_idx", config.get_out_path())
 
         dits = {'number_of_documents': number_of_documents, "avg_length_per_doc": sum_of_doc_lengths / number_of_documents}
