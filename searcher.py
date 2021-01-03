@@ -64,6 +64,7 @@ class Searcher:
         This function loads the posting list and count the amount of relevant documents per term.
         :param query_as_list: parsed query tokens
         :return: dictionary of relevant documents mapping doc_id to document frequency.
+
         """
         # qterm_to_idf = {}
         query_glove_vec = np.zeros(shape=25)
