@@ -1,4 +1,6 @@
 import bisect
+import math
+
 import numpy as np
 from numpy.linalg import norm
 import utils
@@ -34,6 +36,7 @@ class Ranker:
                 for i in range(idx+1, len(key_list)):
                     if key_list[i] in loaded_dict:
                         self.loaded_doc_postings[key_list[i]] = loaded_dict[key_list[i]]
+
             # holds sigma w_ij*w_iq
             sigma_weights_query_doc = list_tfidf_doclength[0]
             # holds sigma((w_ij)^2) for current tweet.
@@ -74,8 +77,10 @@ class Ranker:
         :param doc_length:
         :return: calculated score of similarity between the represented tweet and the query
         """
-        w_cos_weight = 0.9
-        glove_weight = 0.1
+        
+        w_cos_weight = 1
+        glove_weight = 0
+
 
         word_cosine = w_cos_weight * self.cosine(sigma_weights_query_doc, sqaure_w_iq, tweet_part_denominator_cosine)
         # bm25_score = bm25_weight * self.calc_BM25(bm25_vec, doc_length)
@@ -104,6 +109,7 @@ class Ranker:
     def cosine(self, numerator, query_part_denominator, tweet_part_denominator):
         denominator = query_part_denominator * tweet_part_denominator
         if denominator == 0 or numerator == 0:
+            print("something is zero")
             return 0
         return numerator / denominator
 
@@ -111,5 +117,6 @@ class Ranker:
         numenator = np.dot(v1, v2)
         denominator = norm(v1) * norm(v2)
         if denominator == 0 or numenator == 0:
+            print("something is zero in GloVe")
             return 0
         return numenator / denominator
