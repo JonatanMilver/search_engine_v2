@@ -129,7 +129,7 @@ class SearchEngineGlove:
         """
         searcher = Searcher(self._parser, self._indexer, model=self.model)
         # TODO check about K
-        return searcher.search(query, 10)
+        return searcher.search(query, 30)
 
 
     def main(self, corpus_path=None, output_path='', stemming=False, queries=None, num_docs_to_retrieve=1):

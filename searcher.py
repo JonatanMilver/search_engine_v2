@@ -116,8 +116,11 @@ class Searcher:
             term = term_to_docs[0]
 
             term_indices = term_to_docs[1][0]
-            w_iq_square += math.pow(len(term_indices), 2)
             doc_list = term_to_docs[1][1]
+
+            term_tf_idf = ((len(term_indices)/len(query_as_list))*self.calc_idf(term))
+
+            w_iq_square += math.pow(term_tf_idf, 2)
 
             try:
                 if doc_list is not None:
@@ -127,27 +130,18 @@ class Searcher:
                         tweet_details = doc_tuple[1]
                         tweet_doc_length = tweet_details[0]
                         pre_doc_dict_counter[tweet_id] += 1
-                        # if tweet_id not in relevant_docs:
+
                         if tweet_id not in pre_doc_dict:
                             # example - > tf_idf_vec
                             # [[tf1, tf2...]
                             #  [idf1, idf2...]]
                             tf_idf = 0
-                            # loaded_dict = utils.load_dict()
                             pre_doc_dict[tweet_id] = [tf_idf, tweet_doc_length]
-                            # for i in range(idx+1, len(doc_list)):
 
-                        # vec = pre_doc_dict[tweet_id][0]
-                        # tf = self.calculate_tf(doc_tuple)
-                        # for index in term_indices:
-                        #     vec[0, index] = tf
-                        for idx, q_term in enumerate(query_as_list):
-                            # vec[1, idx] = qterm_to_idf[q_term]
-                            pre_doc_dict[tweet_id][0] += self.term_to_doclist[q_term][1][tweet_id][3]*len(term_indices)
-                            # query_vec[0, idx] = len(self.term_to_doclist[q_term][0]) / len(query_as_list)
+                        pre_doc_dict[tweet_id][0] += tweet_details[3] * term_tf_idf
 
-                        if tweet_id not in relevant_docs and pre_doc_dict_counter[
-                            tweet_id] >= min_num_of_words_to_relevent:
+                        if tweet_id not in relevant_docs and \
+                            pre_doc_dict_counter[tweet_id] >= min_num_of_words_to_relevent:
                             relevant_docs[tweet_id] = pre_doc_dict[tweet_id]
 
 
@@ -190,5 +184,18 @@ class Searcher:
         n = self.number_of_docs
         df = term_data[0]
         idf = math.log(((n - df + 0.5) / (df + 0.5)) + 1)
+        return idf
+
+    def calc_idf(self, term):
+        """
+        calculates idf of term
+        :param term: term
+        :return:
+        """
+        # to calc idf
+        n = self.number_of_docs
+        # df = term_data[0]
+        df = self.inverted_index[term][0]
+        idf = math.log10(n / df)
         return idf
 
