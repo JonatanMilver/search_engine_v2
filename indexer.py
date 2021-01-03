@@ -1,4 +1,3 @@
-# DO NOT MODIFY CLASS NAME
 import math
 from collections import OrderedDict, Counter
 
@@ -6,12 +5,13 @@ import numpy as np
 
 import document
 import utils
-# from search_engine_1 import SearchEngineGlove
 
-
+# DO NOT MODIFY CLASS NAME
 class Indexer:
     GLOVE_PATH_SERVER = '../../../../glove.twitter.27B.25d.txt'
     GLOVE_PATH_LOCAL = 'glove.twitter.27B.25d.txt'
+    MAX_ACCUMULATIVE = 4000000
+    POSTING_DICT_SIZE = 200000
     # DO NOT MODIFY THIS SIGNATURE
     # You can change the internal implementation as you see fit.
     def __init__(self, config):
@@ -28,10 +28,8 @@ class Indexer:
         # doc1 -> ('tweet_id', and more details..)
         self.posting_list = []
         self.accumulative_size = 0
-        self.max_accumulative = 4000000
         self.num_of_docs = 0
         self.posting_dict = {}
-        self.postingDict_size = 200000
         self.counter_of_postings = 0
         self.global_capitals = {}
         self.entities_dict = Counter()
@@ -125,7 +123,7 @@ class Indexer:
                     self.posting_list[tuple_idx][1].append(insert_tuple)
 
                 # check if posting_dict is full
-                if len(self.posting_list) == self.postingDict_size:
+                if len(self.posting_list) == self.POSTING_DICT_SIZE:
                     self.save_postings()
 
             except:
@@ -184,7 +182,7 @@ class Indexer:
         """
         saved_chunks = []
         chunks_indices = np.zeros(shape=(len(self.locations_at_postings)), dtype=np.int32)
-        chunk_length = self.postingDict_size // len(self.locations_at_postings) + 1
+        chunk_length = self.POSTING_DICT_SIZE // len(self.locations_at_postings) + 1
         #   inserts the chunks into a chunked list
         for key in self.locations_at_postings:
             loaded, offset = utils.load_list(key, self.config.get_out_path(), self.locations_at_postings[key],
@@ -253,7 +251,7 @@ class Indexer:
                 should_enter = self.update_should_enter(saved_chunks, chunks_indices)
 
                 # saving happens as soon as the size reaches given max size of the final posting
-                if self.accumulative_size >= self.max_accumulative:
+                if self.accumulative_size >= self.MAX_ACCUMULATIVE:
                     self.merged_dicts.append(str(self.counter_of_postings))
                     utils.save_list(building_list, str(self.counter_of_postings), self.config.get_out_path())
                     self.accumulative_size = 0
