@@ -27,7 +27,7 @@ class SearchEngineGlove:
     def initialize_glove_dict(self):
         glove_dict = {}
         with open(self.GLOVE_PATH_LOCAL, 'r', encoding='utf-8') as f:
-            for line in f:
+            for line in tqdm(f):
                 values = line.split()
                 word = values[0]
                 vector = np.asarray(values[1:], "float32")
@@ -56,20 +56,20 @@ class SearchEngineGlove:
         # r = ReadFile(corpus_path=config.get__corpusPath())
         # p = Parse(config.toStem)
         # indexer = Indexer(config)
-        documents_list = self.reader.read_file(file_name=config.get__corpusPath())
-        # parquet_documents_list = r.read_folder(config.get__corpusPath())
-        # for parquet_file in parquet_documents_list:
-        #     documents_list = r.read_file(file_name=parquet_file)
+        # documents_list = self.reader.read_file(file_name=config.get__corpusPath())
+        parquet_documents_list = self.reader.read_folder(config.get__corpusPath())
+        for parquet_file in parquet_documents_list:
+            documents_list = self.reader.read_file(file_name=parquet_file)
             # Iterate over every document in the file
-        for idx, document in tqdm(enumerate(documents_list)):
-            # parse the document
-            parsed_document = self._parser.parse_doc(document)
-            if parsed_document is None:
-                continue
-            number_of_documents += 1
-            sum_of_doc_lengths += parsed_document.doc_length
-            # index the document data
-            self._indexer.add_new_doc(parsed_document)
+            for idx, document in tqdm(enumerate(documents_list)):
+                # parse the document
+                parsed_document = self._parser.parse_doc(document)
+                if parsed_document is None:
+                    continue
+                number_of_documents += 1
+                sum_of_doc_lengths += parsed_document.doc_length
+                # index the document data
+                self._indexer.add_new_doc(parsed_document)
 
         # saves last posting file after indexer has done adding documents.
         self._indexer.save_postings()

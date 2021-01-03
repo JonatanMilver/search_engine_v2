@@ -9,6 +9,16 @@ from stemmer import Stemmer
 
 
 class Parse:
+    # CONSTANTS
+    KBM_SHORTCUTS = {"k": None, "m": None, "b": None, "K": None, "M": None, "B": None}
+    MONTHS_DICT = {"Jul": ("july", "07"), "Aug": ("august", "08")}
+    DAYS_DICT = {"Sat": "saturday", "Sun": "sunday", "Mon": "monday", "Tue": "tuesday", "Wed": "wednsday",
+                 "Thu": "thursday", "Fri": "friday"}
+    RIGHT_SLASH_PATTERN = re.compile(r'^-?[0-9]+\\0*[1-9][0-9]*$')
+    LEFT_SLASH_PATTERN = re.compile(r'^-?[0-9]+/0*[1-9][0-9]*$')
+    NON_LATIN_PATTERN = re.compile(
+        pattern=r'[^\x00-\x7F\x80-\xFF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\u2019]')
+    HASHTAG_SPLIT_PATTERN = re.compile(r'[a-zA-Z0-9](?:[a-z0-9]+|[A-Z0-9]*(?=[A-Z]|$))')
 
     def __init__(self, stemming):
         self.stop_words = stopwords.words('english')
@@ -25,17 +35,6 @@ class Parse:
         if stemming:
             self.stemmer = Stemmer()
 
-        self.hashtag_split_pattern = re.compile(r'[a-zA-Z0-9](?:[a-z0-9]+|[A-Z0-9]*(?=[A-Z]|$))')
-        self.take_off_non_latin = re.compile(
-            pattern=r'[^\x00-\x7F\x80-\xFF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\u2019]')
-        self.left_slash_pattern = re.compile(r'^-?[0-9]+/0*[1-9][0-9]*$')
-        self.right_slash_pattern = re.compile(r'^-?[0-9]+\\0*[1-9][0-9]*$')
-
-        self.days_dict = {"Sat": "saturday", "Sun": "sunday", "Mon": "monday", "Tue": "tuesday", "Wed": "wednsday",
-                          "Thu": "thursday", "Fri": "friday"}
-        self.months_dict = {"Jul": ("july", "07"), "Aug": ("august", "08")}
-
-        self.kbm_shorts = {"k": None, "m": None, "b": None, "K": None, "M": None, "B": None}
 
     def parse_sentence(self, text):
         """
@@ -66,7 +65,6 @@ class Parse:
                 if entity_chunk != '':
                     named_entities.add(entity_chunk[:-1])
                     if empty_chunk > 1:
-                        # ne_words.add(entity_chunk)
                         tokenized_list.append(entity_chunk[:-1].lower())
                     entity_chunk = ''
                     empty_chunk = 0
@@ -88,17 +86,13 @@ class Parse:
                 splitted_trl = self.split_url(self.text_tokens[idx + 2])
                 tokenized_list.extend([x.lower() for x in splitted_trl])
                 self.text_tokens[idx + 2] = ''
-            elif token[-1] in self.kbm_shorts and self.convert_string_to_float(token[:-1]):
+            elif token[-1] in self.KBM_SHORTCUTS and self.convert_string_to_float(token[:-1]):
                 tokenized_list.append(token.upper())
             else:
                 if self.stemmer is not None:
                     token = self.stemmer.stem_term(token)
-                    # self.text_tokens[idx] = token
                 self.append_to_tokenized(tokenized_list, capital_letter_indexer, token)
 
-        # appends named entities to the tokenized list
-        # for word in ne_words:
-        #     tokenized_list.append(word[:-1].lower())
         return tokenized_list, capital_letter_indexer, named_entities
 
     def parse_doc(self, doc_as_list):
@@ -161,7 +155,7 @@ class Parse:
         if len(urls_set) > 0:
             full_text = self.clean_text_from_urls(full_text)
 
-        full_text = re.sub(self.take_off_non_latin, u'', full_text)
+        full_text = re.sub(self.NON_LATIN_PATTERN, u'', full_text)
         if len(full_text) == 0:
             return None
 
@@ -212,7 +206,8 @@ class Parse:
         """
 
         if len(self.text_tokens) > idx + 1:
-            tokenized_list.append((self.text_tokens[idx] + self.text_tokens[idx + 1]).lower())
+            # tokenized_list.append((self.text_tokens[idx] + self.text_tokens[idx + 1]).lower())
+            # self.text_tokens[idx] = ''
             self.text_tokens[idx + 1] = ''
 
     def hashtag_split(self, tag):
@@ -221,7 +216,7 @@ class Parse:
         :param tag: single hash-tag string
         :return: list of words in tag
         """
-        return re.findall(self.hashtag_split_pattern, tag)
+        return re.findall(self.HASHTAG_SPLIT_PATTERN, tag)
 
     def handle_percent(self, tokenized_list, idx):
         """
@@ -430,8 +425,8 @@ class Parse:
         :param token: string
         :return: boolean
         """
-        return re.match(self.right_slash_pattern, token) is not None or \
-            re.match(self.left_slash_pattern, token) is not None
+        return re.match(self.RIGHT_SLASH_PATTERN, token) is not None or \
+               re.match(self.LEFT_SLASH_PATTERN, token) is not None
 
     def handle_dates(self, tweet_date):
         """
@@ -441,7 +436,7 @@ class Parse:
         """
         splitted_date = tweet_date.split()
         day_num = splitted_date[2]
-        month_txt, month_num = self.months_dict[splitted_date[1]]
+        month_txt, month_num = self.MONTHS_DICT[splitted_date[1]]
         date_num = day_num + "/" + month_num + "/" + splitted_date[5]
         return [month_txt, date_num, splitted_date[3]]
 

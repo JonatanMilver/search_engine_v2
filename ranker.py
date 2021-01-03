@@ -11,16 +11,16 @@ class Ranker:
     def __init__(self, avg_length, document_dict, config):
         self.avg_length_per_doc = avg_length
         self.document_dict = document_dict
-        # self.loaded_doc_postings = {}  # key - doc_posting name, value - the posting itself
         self.loaded_doc_postings = {}  # key - tweet_id , value - the tweet's vector and the tweet_date
         self.config = config
 
-    # @staticmethod
     def rank_relevant_doc(self, relevant_doc, query_glove_vec, square_w_iq):
         """
         This function provides rank for each relevant document and sorts them by their scores.
         The current score considers solely the number of terms shared by the tweet_id (full_text) and query.
         :param relevant_doc: dictionary of documents that contains at least one term from the query.
+        :param query_glove_vec: Vector of 25 representing the query.
+        :param square_w_iq: sqrt of sigma((w_iq)^2)
         :return: sorted list of documents by score
         """
         ret = []
@@ -37,15 +37,17 @@ class Ranker:
                     if key_list[i] in loaded_dict:
                         self.loaded_doc_postings[key_list[i]] = loaded_dict[key_list[i]]
 
-            tf_idf = list_tfidf_doclength[0]
-            tweet_part_denominator_cosine = math.sqrt(self.document_dict[tweet_id][1])
+            # holds sigma w_ij*w_iq
+            sigma_weights_query_doc = list_tfidf_doclength[0]
+            # holds sigma((w_ij)^2) for current tweet.
+            tweet_part_denominator_cosine = self.document_dict[tweet_id][1]
             doc_length = list_tfidf_doclength[1]
             # glove_vec = tuple_vec_doclength[2]
             # glove_vec = self.loaded_doc_postings[self.document_dict[tweet_id]][tweet_id][0]
             glove_vec = self.loaded_doc_postings[tweet_id][0]
             # tweet_date = self.loaded_doc_postings[self.document_dict[tweet_id]][tweet_id][1]
             tweet_date = self.loaded_doc_postings[tweet_id][1]
-            calculated_score = self.calc_score(tf_idf, doc_length, glove_vec, query_glove_vec, square_w_iq, tweet_part_denominator_cosine)
+            calculated_score = self.calc_score(sigma_weights_query_doc, doc_length, glove_vec, query_glove_vec, square_w_iq, tweet_part_denominator_cosine)
             tweet_tuple = (calculated_score, tweet_id, tweet_date)
             bisect.insort(ret, tweet_tuple)
 
@@ -65,21 +67,22 @@ class Ranker:
 
         return sorted(sorted_relevant_doc, key=lambda x: (x[0], x[2]))[-k:]
 
-    def calc_score(self, tf_idf, doc_length, glove_vec, query_glove_vec, sqaure_w_iq, tweet_part_denominator_cosine):
+    def calc_score(self, sigma_weights_query_doc, doc_length, glove_vec, query_glove_vec, sqaure_w_iq, tweet_part_denominator_cosine):
         """
 
-        :param query_vec:
-        :param bm25_vec:
+        :param sigma_weights_query_doc:
         :param glove_vec:
         :param vec: a 2xlen(query) numpy matrix, first row holds tf data,
                                            secoend row holds idf data
         :param doc_length:
         :return: calculated score of similarity between the represented tweet and the query
         """
+        
         w_cos_weight = 1
         glove_weight = 0
 
-        word_cosine = w_cos_weight * self.cosine(tf_idf, sqaure_w_iq, tweet_part_denominator_cosine)
+
+        word_cosine = w_cos_weight * self.cosine(sigma_weights_query_doc, sqaure_w_iq, tweet_part_denominator_cosine)
         # bm25_score = bm25_weight * self.calc_BM25(bm25_vec, doc_length)
         glove_cosine = glove_weight * self.glove_cosine(glove_vec, query_glove_vec)
 
