@@ -56,41 +56,30 @@ class SearchEngineGlove:
         # r = ReadFile(corpus_path=config.get__corpusPath())
         # p = Parse(config.toStem)
         # indexer = Indexer(config)
-        # documents_list = self.reader.read_file(file_name=config.get__corpusPath())
-        parquet_documents_list = self.reader.read_folder(config.get__corpusPath())
-        for parquet_file in parquet_documents_list:
-            documents_list = self.reader.read_file(file_name=parquet_file)
+        documents_list = self.reader.read_file(file_name=config.get__corpusPath())
+        # parquet_documents_list = self.reader.read_folder(config.get__corpusPath())
+        # for parquet_file in parquet_documents_list:
+        #     documents_list = self.reader.read_file(file_name=parquet_file)
             # Iterate over every document in the file
-            for idx, document in tqdm(enumerate(documents_list)):
-                # parse the document
-                parsed_document = self._parser.parse_doc(document)
-                if parsed_document is None:
-                    continue
-                number_of_documents += 1
-                sum_of_doc_lengths += parsed_document.doc_length
-                # index the document data
-                self._indexer.add_new_doc(parsed_document)
+        for idx, document in tqdm(enumerate(documents_list)):
+            # parse the document
+            parsed_document = self._parser.parse_doc(document)
+            if parsed_document is None:
+                continue
+            number_of_documents += 1
+            sum_of_doc_lengths += parsed_document.doc_length
+            # index the document data
+            self._indexer.add_new_doc(parsed_document)
 
-        # saves last posting file after indexer has done adding documents.
-        self._indexer.save_postings()
-        if len(self._indexer.doc_posting_dict) > 0:
-            self._indexer.save_doc_posting()
+        tuple_to_save = self._indexer.fix_inverted_index()
+        utils.save_pickle_tuple(tuple_to_save, 'idx_engine1', config.get_out_path())
 
-        if len(self._indexer.document_posting_covid) > 0:
-            self._indexer.save_doc_covid()
-
-        self._indexer.set_num_of_doc(number_of_documents)
-
-        # merges posting files.
-        self._indexer.merge_chunks()
-        utils.save_dict(self._indexer.document_dict, "documents_dict", config.get_out_path())
-        self._indexer.delete_dict_after_saving()
-        utils.save_dict(self._indexer.inverted_idx, "inverted_idx", config.get_out_path())
+        check = utils.load_pickle_tuple('idx_engine1.pkl', config.get_out_path())
+        print()
 
         dits = {'number_of_documents': number_of_documents, "avg_length_per_doc": sum_of_doc_lengths / number_of_documents}
 
         utils.save_dict(dits, 'details', config.get_out_path())
-
 
     def load_index(self, out_path=''):
         inverted_index = self._indexer.load_index('inverted_index.pkl')
@@ -98,7 +87,6 @@ class SearchEngineGlove:
         dits = utils.load_dict('details', out_path)
         num_of_docs, avg_length_per_doc = dits['number_of_documents'], dits['avg_length_per_doc']
         return inverted_index, documents_dict, num_of_docs, avg_length_per_doc
-
 
     # def search_and_rank_query(self, query, k):
     #     # p = Parse(config.toStem)
@@ -129,15 +117,15 @@ class SearchEngineGlove:
         """
         searcher = Searcher(self._parser, self._indexer, model=self.model)
         # TODO check about K
-        return searcher.search(query, 30)
-
+        l_res = searcher.search(query, 30)
+        return len(l_res), l_res
 
     def main(self, corpus_path=None, output_path='', stemming=False, queries=None, num_docs_to_retrieve=1):
         if queries is not None:
             # config = ConfigClass(corpus_path, output_path, stemming)
             self.run_engine(self._config)
 
-        query_list = handle_queries(queries)
+        query_list = self.handle_queries(queries)
         # inverted_index, document_dict, num_of_docs, avg_length_per_doc = 0self.load_index(output_path)
         # tweet_url = 'http://twitter.com/anyuser/status/'
         # num_of_docs = 10000000
@@ -148,21 +136,21 @@ class SearchEngineGlove:
                 print('tweet id: {}, score: {}'.format(str(doc_tuple[1]), doc_tuple[0]))
 
 
-def write_to_csv(tuple_list):
-    df = pd.DataFrame(tuple_list, columns=['query', 'tweet_id', 'score'])
-    df.to_csv('results.csv')
+    def write_to_csv(self, tuple_list):
+        df = pd.DataFrame(tuple_list, columns=['query', 'tweet_id', 'score'])
+        df.to_csv('results.csv')
 
 
-def handle_queries(queries):
-    if type(queries) is list:
-        return queries
+    def handle_queries(self,queries):
+        if type(queries) is list:
+            return queries
 
-    q = []
-    with open(queries, 'r', encoding='utf-8') as f:
-        for line in f:
-            if line != '\n':
-                # start = line.find('.')
-                # q.append(line[start+2:])
-                q.append(line)
+        q = []
+        with open(queries, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line != '\n':
+                    # start = line.find('.')
+                    # q.append(line[start+2:])
+                    q.append(line)
 
-    return q
+        return q
