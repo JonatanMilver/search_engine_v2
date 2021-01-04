@@ -19,16 +19,15 @@ class Searcher:
         self._parser = parser
         self._indexer = indexer
         self.number_of_docs, self.avg_length_per_doc = self.load_details()
-        self._ranker = Ranker(self.avg_length_per_doc, self.config)
         self._model = model
 
         # self.document_dict = utils.load_dict("documents_dict", self.config.get_out_path())
-        self.inverted_index, self.document_dict = self._indexer.load_index()
+        self.inverted_index, self.document_dict = self._indexer.load_index("idx_engine1.pkl")
 
         self.term_to_indices = {}
         self.glove_dict = self._indexer.glove_dict
 
-        self.ranker = Ranker(self.avg_length_per_doc, self.document_dict, self.config)
+        self.ranker = Ranker(self.config)
 
     def load_details(self):
         dits = utils.load_dict('details', self.config.get_out_path())
@@ -99,9 +98,12 @@ class Searcher:
             except:
                 print('term {} not found in inverted index'.format(term))
 
+
+
         query_glove_vec /= len(query_as_list)
 
-        p = 0.35
+        # p = 0.35
+        p = 0
         min_num_of_words_to_relevent = int(len(query_as_list) * p)
         pre_doc_dict = {}
         pre_doc_dict_counter = Counter()
@@ -129,7 +131,7 @@ class Searcher:
                             tf_idf_numarator = 0
                             tf_idf_denomenator = self.document_dict[tweet_id][1]
                             tweet_doc_length = self.inverted_index.get_doc_length(term, tweet_id)
-                            glove_vec = self.document_dict[0]
+                            glove_vec = self.document_dict[tweet_id][0]
                             tweet_date = self.inverted_index.get_tweet_date(term, tweet_id)
 
                             pre_doc_dict[tweet_id] = [tf_idf_numarator, tf_idf_denomenator, tweet_doc_length, glove_vec, tweet_date]
@@ -139,7 +141,6 @@ class Searcher:
                         if tweet_id not in relevant_docs and \
                             pre_doc_dict_counter[tweet_id] >= min_num_of_words_to_relevent:
                             relevant_docs[tweet_id] = pre_doc_dict[tweet_id]
-
 
             except:
                 print('term {} not found in posting'.format(term))
@@ -191,6 +192,8 @@ class Searcher:
         # to calc idf
         n = self.number_of_docs
         # df = term_data[0]
+        if term not  in self.inverted_index:
+            return 0
         df = self.inverted_index[term][0]
         idf = math.log10(n / df)
         return idf

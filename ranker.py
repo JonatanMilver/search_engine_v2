@@ -8,8 +8,8 @@ import utils
 
 
 class Ranker:
-    def __init__(self, avg_length, config):
-        self.avg_length_per_doc = avg_length
+    def __init__(self, config):
+        # self.avg_length_per_doc = avg_length
         self.loaded_doc_postings = {}  # key - tweet_id , value - the tweet's vector and the tweet_date
         self.config = config
 
@@ -107,7 +107,6 @@ class Ranker:
     def cosine(self, numerator, query_part_denominator, tweet_part_denominator):
         denominator = query_part_denominator * tweet_part_denominator
         if denominator == 0 or numerator == 0:
-            print("something is zero")
             return 0
         return numerator / denominator
 
@@ -115,6 +114,5 @@ class Ranker:
         numenator = np.dot(v1, v2)
         denominator = norm(v1) * norm(v2)
         if denominator == 0 or numenator == 0:
-            print("something is zero in GloVe")
             return 0
         return numenator / denominator
