@@ -36,6 +36,7 @@ if __name__ == '__main__':
     bench_data_path = os.path.join('data', 'benchmark_data_train.snappy.parquet')
     bench_lbls_path = os.path.join('data', 'benchmark_lbls_train.csv')
     queries_path = os.path.join('data', 'queries_train.tsv')
+    model_dir = os.path.join('.', 'model')
 
     start = datetime.now()
     try:
@@ -60,6 +61,25 @@ if __name__ == '__main__':
             queries = pd.read_csv(os.path.join('data', 'queries_train.tsv'), sep='\t')
             logging.info("Successfully loaded queries data.")
 
+        import configuration
+
+        config = configuration.ConfigClass()
+
+        # do we need to download a pretrained model?
+        model_url = config.get_model_url()
+        if model_url is not None and config.get_download_model():
+            import utils
+
+            dest_path = 'model.zip'
+            utils.download_file_from_google_drive(model_url, dest_path)
+            if not os.path.exists(model_dir):
+                os.mkdir(model_dir)
+            if os.path.exists(dest_path):
+                utils.unzip_file(dest_path, model_dir)
+                logging.info(f'Successfully downloaded and extracted pretrained model into {model_dir}.')
+            else:
+                logging.error('model.zip file does not exists.')
+
         # test for each search engine module
         engine_modules = ['search_engine_' + name for name in ['1', '2', 'best']]
         for engine_module in engine_modules:
@@ -70,18 +90,19 @@ if __name__ == '__main__':
                 # try importing the module
                 se = importlib.import_module(engine_module)
                 logging.info(f"Successfully imported module {engine_module}.")
-                engine = se.SearchEngine()
+                engine = se.SearchEngine(config=config)
 
                 # test building an index and doing so in <1 minute
                 build_idx_time = timeit.timeit(
                     "engine.build_index_from_parquet(bench_data_path)",
                     globals=globals(), number=1
                 )
-                logging.debug(f"Building the index in {engine_module} for benchmark data took {build_idx_time} seconds.")
+                logging.debug(
+                    f"Building the index in {engine_module} for benchmark data took {build_idx_time} seconds.")
                 if build_idx_time > 60:
                     logging.error('Parsing and index our *small* benchmark dataset took over a minute!')
                 # test loading precomputed model
-                engine.load_precomputed_model()
+                engine.load_precomputed_model(model_dir)
 
                 # test that we can run one query and get results in the format we expect
                 n_res, res = engine.search('bioweapon')
@@ -107,7 +128,8 @@ if __name__ == '__main__':
                         if q_n_res is None or q_res is None or q_n_res < 1 or len(q_res) < 1:
                             logging.error(f"Query {q_id} with keywords '{q_keywords}' returned no results.")
                         else:
-                            logging.debug(f"{engine_module} successfully returned {q_n_res} results for query number {q_id}.")
+                            logging.debug(
+                                f"{engine_module} successfully returned {q_n_res} results for query number {q_id}.")
                             invalid_tweet_ids = [doc_id for doc_id in q_res if invalid_tweet_id(doc_id)]
                             if len(invalid_tweet_ids) > 0:
                                 logging.error(f"Query  {q_id} returned results that are not valid tweet ids: " + str(
@@ -133,8 +155,8 @@ if __name__ == '__main__':
                     if results_map <= 0 or results_map > 1:
                         logging.error(f'{engine_module} results MAP value is out of range (0,1).')
 
-                # test that the average across queries of precision, 
-                # precision@5, precision@10, precision@50, and recall 
+                # test that the average across queries of precision,
+                # precision@5, precision@10, precision@50, and recall
                 # is in (0,1).
 
                 if engine_module == 'search_engine_best' and \
