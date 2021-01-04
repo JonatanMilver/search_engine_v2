@@ -56,6 +56,10 @@ class Parse:
             if token.lower() in self.stop_words_dict or (len(token) == 1 and ord(token) > 126):
                 continue
 
+            if token == '@' and len(self.text_tokens) > idx + 1:
+                self.text_tokens[idx+1] = ''
+                continue
+
             if len(token) > 0 and token[0].isupper():
                 # chunks entities together.
                 entity_chunk += token + " "
@@ -71,8 +75,8 @@ class Parse:
 
             if token == '#':
                 self.handle_hashtags(tokenized_list, idx)
-            elif token == '@':
-                self.handle_tags(tokenized_list, idx)
+            # elif token == '@':
+            #     self.handle_tags(tokenized_list, idx)
             elif self.is_fraction(token):
                 self.handle_fraction(tokenized_list, token, idx)
             elif token in ["%", "percent", "percentage"]:
@@ -141,7 +145,6 @@ class Parse:
         urls_set = set()
         try:
             # holds all URLs in one place
-
             for d in dict_list:
                 if d is not None:
                     for key in d.keys():
@@ -154,7 +157,7 @@ class Parse:
         # removes redundant short URLs from full_text
         if len(urls_set) > 0:
             full_text = self.clean_text_from_urls(full_text)
-
+        # takes off non-latin words.
         full_text = re.sub(self.NON_LATIN_PATTERN, u'', full_text)
         if len(full_text) == 0:
             return None
@@ -172,7 +175,6 @@ class Parse:
             if term not in term_dict.keys():
                 # holding term's locations at current tweet
                 term_dict[term] = 1
-
             else:
                 term_dict[term] += 1
             if term_dict[term] > max_tf:

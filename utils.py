@@ -1,6 +1,7 @@
 import pickle
 import os
 import re
+import zipfile
 
 import requests
 
@@ -85,6 +86,19 @@ def save_dict(obj, name, path):
         for pair in obj.items():
             pickle.dump(pair, f, pickle.HIGHEST_PROTOCOL)
 
+def save_pickle_tuple(obj, name, path):
+    with open(os.path.join(path, name) + '.pkl', 'wb') as f:
+        pickle.dump(obj[0], f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(obj[1], f, pickle.HIGHEST_PROTOCOL)
+
+def load_pickle_tuple(name, path):
+    obj_holder = []
+    with open(os.path.join(path, name), 'rb') as f:
+        while True:
+            try:
+                obj_holder.append(pickle.load(f))
+            except:
+                return tuple(obj_holder)
 
 # THIS PART HAS BEEN TAKEN FROM THE COURSE'S REPOSITORY
 
