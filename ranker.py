@@ -8,10 +8,11 @@ import utils
 
 
 class Ranker:
-    def __init__(self, config):
+    def __init__(self, config, useGlove):
         # self.avg_length_per_doc = avg_length
         self.loaded_doc_postings = {}  # key - tweet_id , value - the tweet's vector and the tweet_date
         self.config = config
+        self.useGlove = useGlove
 
     def rank_relevant_doc(self, relevant_doc, query_glove_vec, square_w_iq):
         """
@@ -75,9 +76,12 @@ class Ranker:
         :param doc_length:
         :return: calculated score of similarity between the represented tweet and the query
         """
-        
-        w_cos_weight = 1
-        glove_weight = 0
+        if self.useGlove:
+            w_cos_weight = 0.8
+            glove_weight = 0.2
+        else:
+            w_cos_weight = 1
+            glove_weight = 0
 
 
         word_cosine = w_cos_weight * self.cosine(sigma_weights_query_doc, sqaure_w_iq, tweet_part_denominator_cosine)
