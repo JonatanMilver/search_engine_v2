@@ -64,13 +64,9 @@ class InvertedIndex:
         if term in self.main_dict:
             return self.main_dict[term][1][tweet_id][3]
 
-    def get_cosine_tweet_denominator(self, term, tweet_id):
-        if term in self.main_dict:
-            return self.main_dict[term][1][tweet_id][4]
-
     def get_tweet_date(self, term, tweet_id):
         if term in self.main_dict:
-            return self.main_dict[term][1][tweet_id][5]
+            return self.main_dict[term][1][tweet_id][4]
 
     def set_tf_idf(self, term, tweet_id, tf_idf):
         if term in self.main_dict:

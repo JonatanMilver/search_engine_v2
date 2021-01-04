@@ -11,7 +11,7 @@ import pandas as pd
 
 
 # By GloVe Method
-class SearchEngineGlove:
+class SearchEngine:
     GLOVE_PATH_SERVER = '../../../../glove.twitter.27B.25d.txt'
     GLOVE_PATH_LOCAL = 'glove.twitter.27B.25d.txt'
     # glove_dict = {}
@@ -74,12 +74,51 @@ class SearchEngineGlove:
         tuple_to_save = self._indexer.fix_inverted_index()
         utils.save_pickle_tuple(tuple_to_save, 'idx_engine1', config.get_out_path())
 
-        check = utils.load_pickle_tuple('idx_engine1.pkl', config.get_out_path())
-        print()
+        # check = utils.load_pickle_tuple('idx_engine1.pkl', config.get_out_path())
+        # print()
 
         dits = {'number_of_documents': number_of_documents, "avg_length_per_doc": sum_of_doc_lengths / number_of_documents}
 
         utils.save_dict(dits, 'details', config.get_out_path())
+
+    # DO NOT MODIFY THIS SIGNATURE
+    # You can change the internal implementation as you see fit.
+    def build_index_from_parquet(self, fn):
+        """
+        Reads parquet file and passes it to the parser, then indexer.
+        Input:
+            fn - path to parquet file
+        Output:
+            No output, just modifies the internal _indexer object.
+        """
+        df = pd.read_parquet(fn, engine="pyarrow")
+        documents_list = df.values.tolist()
+        # Iterate over every document in the file
+        number_of_documents = 0
+        for idx, document in tqdm(enumerate(documents_list)):
+            # parse the document
+            parsed_document = self._parser.parse_doc(document)
+            if parsed_document is None:
+                continue
+            number_of_documents += 1
+            # index the document data
+            self._indexer.add_new_doc(parsed_document)
+
+        tuple_to_save = self._indexer.fix_inverted_index()
+        utils.save_pickle_tuple(tuple_to_save, 'idx_engine1', self._config.get_out_path())
+
+        print('Finished parsing and indexing.')
+
+    # DO NOT MODIFY THIS SIGNATURE
+    # You can change the internal implementation as you see fit.
+    def load_precomputed_model(self, model_path):
+        """
+        Loads a pre-computed model (or models) so we can answer queries.
+        This is where you would load models like word2vec, LSI, LDA, etc. and
+        assign to self._model, which is passed on to the searcher at query time.
+        """
+        pass
+
 
     def load_index(self, out_path=''):
         inverted_index = self._indexer.load_index('inverted_index.pkl')
@@ -117,8 +156,9 @@ class SearchEngineGlove:
         """
         searcher = Searcher(self._parser, self._indexer, model=self.model)
         # TODO check about K
-        l_res = searcher.search(query, 30)
-        return len(l_res), l_res
+        l_res = searcher.search(query, 500)
+        t_ids = [tup[1] for tup in l_res]
+        return len(l_res), t_ids
 
     def main(self, corpus_path=None, output_path='', stemming=False, queries=None, num_docs_to_retrieve=1):
         if queries is not None:
@@ -127,13 +167,13 @@ class SearchEngineGlove:
 
         query_list = self.handle_queries(queries)
         # inverted_index, document_dict, num_of_docs, avg_length_per_doc = 0self.load_index(output_path)
-        # tweet_url = 'http://twitter.com/anyuser/status/'
+        tweet_url = 'http://twitter.com/anyuser/status/'
         # num_of_docs = 10000000
         # avg_length_per_doc = 21.5
         for idx, query in enumerate(query_list):
             docs_list = self.search(query)
-            for doc_tuple in docs_list:
-                print('tweet id: {}, score: {}'.format(str(doc_tuple[1]), doc_tuple[0]))
+            for doc_tuple in docs_list[1]:
+                print('tweet id: {}, score: {}'.format(tweet_url+str(doc_tuple[1]), doc_tuple[0]))
 
 
     def write_to_csv(self, tuple_list):
