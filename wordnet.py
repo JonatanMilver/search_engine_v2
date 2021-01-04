@@ -1,0 +1,3 @@
+
+class Wordnet:
+    pass

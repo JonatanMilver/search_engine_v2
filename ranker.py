@@ -8,9 +8,8 @@ import utils
 
 
 class Ranker:
-    def __init__(self, avg_length, document_dict, config):
+    def __init__(self, avg_length, config):
         self.avg_length_per_doc = avg_length
-        self.document_dict = document_dict
         self.loaded_doc_postings = {}  # key - tweet_id , value - the tweet's vector and the tweet_date
         self.config = config
 
@@ -23,38 +22,37 @@ class Ranker:
         :param square_w_iq: sqrt of sigma((w_iq)^2)
         :return: sorted list of documents by score
         """
+
         ret = []
         key_list = list(relevant_doc.keys())
         # for tweet_id, tuple_vec_doclength in relevant_doc.items():
         for idx, tweet_id in enumerate(key_list):
-            list_tfidf_doclength = relevant_doc[tweet_id]
-            # if self.document_dict[tweet_id] not in self.loaded_doc_postings:
-            if tweet_id not in self.loaded_doc_postings:
-                loaded_dict = utils.load_dict(self.document_dict[tweet_id][0], self.config.get_out_path())
-                # self.loaded_doc_postings[self.document_dict[tweet_id]] = loaded_dict
-                self.loaded_doc_postings[tweet_id] = loaded_dict[tweet_id]
-                for i in range(idx+1, len(key_list)):
-                    if key_list[i] in loaded_dict:
-                        self.loaded_doc_postings[key_list[i]] = loaded_dict[key_list[i]]
+            # list_tfidf_doclength = relevant_doc[tweet_id]
+
+            # if tweet_id not in self.loaded_doc_postings:
+            #     loaded_dict = utils.load_dict(self.document_dict[tweet_id][0], self.config.get_out_path())
+            #     # self.loaded_doc_postings[self.document_dict[tweet_id]] = loaded_dict
+            #     self.loaded_doc_postings[tweet_id] = loaded_dict[tweet_id]
+            #     for i in range(idx+1, len(key_list)):
+            #         if key_list[i] in loaded_dict:
+            #             self.loaded_doc_postings[key_list[i]] = loaded_dict[key_list[i]]
 
             # holds sigma w_ij*w_iq
-            sigma_weights_query_doc = list_tfidf_doclength[0]
+            sigma_weights_query_doc = relevant_doc[tweet_id][0]
             # holds sigma((w_ij)^2) for current tweet.
-            tweet_part_denominator_cosine = self.document_dict[tweet_id][1]
-            doc_length = list_tfidf_doclength[1]
-            # glove_vec = tuple_vec_doclength[2]
-            # glove_vec = self.loaded_doc_postings[self.document_dict[tweet_id]][tweet_id][0]
-            glove_vec = self.loaded_doc_postings[tweet_id][0]
-            # tweet_date = self.loaded_doc_postings[self.document_dict[tweet_id]][tweet_id][1]
-            tweet_date = self.loaded_doc_postings[tweet_id][1]
+            tweet_part_denominator_cosine = relevant_doc[tweet_id][1]
+
+            doc_length = relevant_doc[tweet_id][2]
+            glove_vec = relevant_doc[tweet_id][3]
+            tweet_date = relevant_doc[tweet_id][4]
+
             calculated_score = self.calc_score(sigma_weights_query_doc, doc_length, glove_vec, query_glove_vec, square_w_iq, tweet_part_denominator_cosine)
             tweet_tuple = (calculated_score, tweet_id, tweet_date)
             bisect.insort(ret, tweet_tuple)
 
         return ret
 
-    @staticmethod
-    def retrieve_top_k(sorted_relevant_doc, k=1):
+    def retrieve_top_k(self, sorted_relevant_doc, k=1):
         """
         return a list of top K tweets based on their ranking from highest to lowest
         :param sorted_relevant_doc: list of all candidates docs.

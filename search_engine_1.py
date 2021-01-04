@@ -1,5 +1,4 @@
 from tqdm import tqdm
-
 from reader import ReadFile
 from configuration import ConfigClass
 from parser_module import Parse
@@ -8,14 +7,14 @@ from searcher import Searcher
 import utils
 import numpy as np
 import pandas as pd
+from wordnet import Wordnet
 
 
 # By GloVe Method
 class SearchEngineGlove:
     GLOVE_PATH_SERVER = '../../../../glove.twitter.27B.25d.txt'
     GLOVE_PATH_LOCAL = 'glove.twitter.27B.25d.txt'
-    # glove_dict = {}
-    model = None
+
     def __init__(self, config=None):
         self._config = config
         self._parser = Parse(False)
@@ -34,15 +33,17 @@ class SearchEngineGlove:
                 glove_dict[word] = vector
         return glove_dict
 
-# with open(GLOVE_PATH_LOCAL, 'r', encoding='utf-8') as f:
-#     for line in f:
-#         values = line.split()
-#         word = values[0]
-#         vector = np.asarray(values[1:], "float32")
-#         glove_dict[word] = vector
+    def initialize_wordnet(self):
+        return Wordnet()
 
+    # with open(GLOVE_PATH_LOCAL, 'r', encoding='utf-8') as f:
+    #     for line in f:
+    #         values = line.split()
+    #         word = values[0]
+    #         vector = np.asarray(values[1:], "float32")
+    #         glove_dict[word] = vector
 
-# load_glove_dict()
+    # load_glove_dict()
 
     def run_engine(self, config):
         """
@@ -87,18 +88,28 @@ class SearchEngineGlove:
         self._indexer.delete_dict_after_saving()
         utils.save_dict(self._indexer.inverted_idx, "inverted_idx", config.get_out_path())
 
-        dits = {'number_of_documents': number_of_documents, "avg_length_per_doc": sum_of_doc_lengths / number_of_documents}
+        dits = {'number_of_documents': number_of_documents,
+                "avg_length_per_doc": sum_of_doc_lengths / number_of_documents}
 
         utils.save_dict(dits, 'details', config.get_out_path())
 
+    # def load_index(self, out_path=''):
+    #     inverted_index = self._indexer.load_index('inverted_index.pkl')
+    #     documents_dict = utils.load_dict("documents_dict", out_path)
+    #     dits = utils.load_dict('details', out_path)
+    #     num_of_docs, avg_length_per_doc = dits['number_of_documents'], dits['avg_length_per_doc']
+    #     return inverted_index, documents_dict, num_of_docs, avg_length_per_doc
 
-    def load_index(self, out_path=''):
-        inverted_index = self._indexer.load_index('inverted_index.pkl')
-        documents_dict = utils.load_dict("documents_dict", out_path)
-        dits = utils.load_dict('details', out_path)
-        num_of_docs, avg_length_per_doc = dits['number_of_documents'], dits['avg_length_per_doc']
-        return inverted_index, documents_dict, num_of_docs, avg_length_per_doc
+    # DO NOT MODIFY THIS SIGNATURE
+    # You can change the internal implementation as you see fit.
 
+    def load_precomputed_model(self):
+        """
+        Loads a pre-computed model (or models) so we can answer queries.
+        This is where you would load models like word2vec, LSI, LDA, etc. and
+        assign to self._model, which is passed on to the searcher at query time.
+        """
+        pass
 
     # def search_and_rank_query(self, query, k):
     #     # p = Parse(config.toStem)
@@ -129,8 +140,8 @@ class SearchEngineGlove:
         """
         searcher = Searcher(self._parser, self._indexer, model=self.model)
         # TODO check about K
-        return searcher.search(query, 30)
-
+        l_res = searcher.search(query, 30)
+        return len(l_res), l_res
 
     def main(self, corpus_path=None, output_path='', stemming=False, queries=None, num_docs_to_retrieve=1):
         if queries is not None:
@@ -148,7 +159,7 @@ class SearchEngineGlove:
                 print('tweet id: {}, score: {}'.format(str(doc_tuple[1]), doc_tuple[0]))
 
 
-def write_to_csv(tuple_list):
+def write_to_csv(self, tuple_list):
     df = pd.DataFrame(tuple_list, columns=['query', 'tweet_id', 'score'])
     df.to_csv('results.csv')
 
