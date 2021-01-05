@@ -123,7 +123,7 @@ class Indexer:
                 term = term.upper()
                 self.inverted_idx.insert_entry(term, term_info)
                 # TODO check the amount of min df
-            if term in self.inverted_idx.main_dict and self.inverted_idx.get_df(term) < 20:
+            if term in self.inverted_idx.main_dict and self.inverted_idx.get_df(term) < 17:
                 should_append = False
                 self.inverted_idx.remove(term)
             if should_append:

@@ -157,7 +157,7 @@ class SearchEngine:
         searcher = Searcher(self._parser, self._indexer, model=self.model)
         # TODO check about K
         query_as_list = self._parser.parse_sentence(query)
-        l_res = searcher.search(query_as_list[0], 500)
+        l_res = searcher.search(query_as_list[0])
         t_ids = [tup[1] for tup in l_res]
         return len(l_res), t_ids
 
