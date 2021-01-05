@@ -26,7 +26,8 @@ class Parse:
             ['rt', '“', r'’', r'n\'t', 'n\'t', '\'s', r'\'s', r'\'ve', r'\'m', '...', r'\'\'', r'\'d', '&', r'\'ll', r'\'re',
              r' ', r'', r"", r"''", r'""', r'"', r"“", "”", r"’", "‘", r"``", '``', r"'", r"`",
              r'!', r'?', r',', r':', r';', r'(', r')', r'...', r'[', ']', r'{', '}' "'&'", '.', r'\'d',
-             '-', '--'])
+             '-', '--','covid', '19', 'covid-19', 'mask', 'coronavirus', 'pandemic', 'people', 'wear', 'trump', 'covid19', 'masks', 'new', 'virus', 'wearing', 'cases', 'amp', '#covid19', 'us', 'like'])
+        # , 'covid', '19', 'covid-19', 'mask', 'coronavirus', 'pandemic', 'people', 'wear', 'trump', 'covid19', 'masks', 'new', 'virus', 'wearing', 'cases', 'amp', '#covid19', 'us', 'like'
         self.stop_words_dict = dict.fromkeys(self.stop_words)
 
         self.text_tokens = None
@@ -58,6 +59,9 @@ class Parse:
 
             if token == '@' and len(self.text_tokens) > idx + 1:
                 self.text_tokens[idx+1] = ''
+                continue
+            c1 = token[0]
+            if (ord(c1) < 48 or 57 < ord(c1) < 65 or 90 < ord(c1) < 97 or 122 < ord(c1)) and c1 != '#':
                 continue
 
             if len(token) > 0 and token[0].isupper():
@@ -196,8 +200,8 @@ class Parse:
         """
         if len(self.text_tokens) > idx + 1:
             splitted_hashtags = self.hashtag_split(self.text_tokens[idx + 1])
-            tokenized_list.append((self.text_tokens[idx] + self.text_tokens[idx + 1]).lower())
-            tokenized_list.extend([x.lower() for x in splitted_hashtags])
+            # tokenized_list.append((self.text_tokens[idx] + self.text_tokens[idx + 1]).lower())
+            tokenized_list.extend([x.lower() for x in splitted_hashtags if x.lower() not in self.stop_words_dict])
             self.text_tokens[idx + 1] = ''
 
     def handle_tags(self, tokenized_list, idx):
@@ -234,11 +238,12 @@ class Parse:
             else:
                 number = self.convert_string_to_float(self.text_tokens[idx - 1])
             if number is not None:
-                tokenized_list.append(self.text_tokens[idx - 1].lower() + "%")
+                if (self.text_tokens[idx - 1].lower() + "%").lower() not in self.stop_words_dict:
+                    tokenized_list.append(self.text_tokens[idx - 1].lower() + "%")
             elif dash_idx != -1:
                 left = self.text_tokens[idx - 1][:dash_idx]
                 right = self.text_tokens[idx - 1][dash_idx + 1:]
-                if left.isnumeric() and right.isnumeric():
+                if left.isnumeric() and right.isnumeric() and (self.text_tokens[idx - 1].lower() + "%") not in self.stop_words_dict:
                     tokenized_list.append(self.text_tokens[idx - 1].lower() + "%")
 
     def handle_number(self, tokenized_list, idx, token):
@@ -408,18 +413,22 @@ class Parse:
         if slash_idx != -1:
             token = token[:slash_idx] + '/' + token[slash_idx + 1:]
         frac = str(Fraction(token))
-        if idx == 0 and frac != token:
+        if idx == 0 and frac != token and frac.lower() not in self.stop_words_dict:
             tokenized_list.append(frac.lower())
         else:
             number = self.convert_string_to_float(self.text_tokens[idx - 1])
             if number is not None:
-                tokenized_list.append((self.text_tokens[idx - 1] + " " + token).lower())
+                if (self.text_tokens[idx - 1] + " " + token).lower() not in self.stop_words_dict:
+                    tokenized_list.append((self.text_tokens[idx - 1] + " " + token).lower())
                 self.text_tokens[idx] = ''
             elif token != frac:
-                tokenized_list.append(frac.lower())
-                tokenized_list.append(token.lower())
+                if frac.lower() not in self.stop_words_dict:
+                    tokenized_list.append(frac.lower())
+                if token.lower() not in self.stop_words_dict:
+                    tokenized_list.append(token.lower())
             else:
-                tokenized_list.append(token.lower())
+                if token.lower() not in self.stop_words_dict:
+                    tokenized_list.append(token.lower())
 
     def is_fraction(self, token):
         """
@@ -456,4 +465,9 @@ class Parse:
         else:
             capital_letters[token.lower()] = False
         if token.lower() not in self.stop_words_dict:
+            c1 = token[0]
+            if (ord(c1) < 48 or 57 < ord(c1) < 65 or 90 < ord(c1) < 97 or 122 < ord(c1)) and c1 != '#':
+                return
+            elif len(token) == 1 and 48 <= ord(c1) <= 57:
+                return
             tokenized_list.append(token.lower())

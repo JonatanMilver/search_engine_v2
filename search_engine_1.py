@@ -56,20 +56,20 @@ class SearchEngine:
         # r = ReadFile(corpus_path=config.get__corpusPath())
         # p = Parse(config.toStem)
         # indexer = Indexer(config)
-        documents_list = self.reader.read_file(file_name=config.get__corpusPath())
-        # parquet_documents_list = self.reader.read_folder(config.get__corpusPath())
-        # for parquet_file in parquet_documents_list:
-        #     documents_list = self.reader.read_file(file_name=parquet_file)
+        # documents_list = self.reader.read_file(file_name=config.get__corpusPath())
+        parquet_documents_list = self.reader.read_folder(config.get__corpusPath())
+        for parquet_file in parquet_documents_list:
+            documents_list = self.reader.read_file(file_name=parquet_file)
             # Iterate over every document in the file
-        for idx, document in tqdm(enumerate(documents_list)):
-            # parse the document
-            parsed_document = self._parser.parse_doc(document)
-            if parsed_document is None:
-                continue
-            number_of_documents += 1
-            sum_of_doc_lengths += parsed_document.doc_length
-            # index the document data
-            self._indexer.add_new_doc(parsed_document)
+            for idx, document in tqdm(enumerate(documents_list)):
+                # parse the document
+                parsed_document = self._parser.parse_doc(document)
+                if parsed_document is None:
+                    continue
+                number_of_documents += 1
+                sum_of_doc_lengths += parsed_document.doc_length
+                # index the document data
+                self._indexer.add_new_doc(parsed_document)
 
         tuple_to_save = self._indexer.fix_inverted_index()
         utils.save_pickle_tuple(tuple_to_save, 'idx_engine1', config.get_out_path())
@@ -156,7 +156,8 @@ class SearchEngine:
         """
         searcher = Searcher(self._parser, self._indexer, model=self.model)
         # TODO check about K
-        l_res = searcher.search(query, 500)
+        query_as_list = self._parser.parse_sentence(query)
+        l_res = searcher.search(query_as_list[0], 500)
         t_ids = [tup[1] for tup in l_res]
         return len(l_res), t_ids
 
@@ -173,7 +174,7 @@ class SearchEngine:
         for idx, query in enumerate(query_list):
             docs_list = self.search(query)
             for doc_tuple in docs_list[1]:
-                print('tweet id: {}, score: {}'.format(tweet_url+str(doc_tuple[1]), doc_tuple[0]))
+                print('tweet id: {}'.format(tweet_url+str(doc_tuple)))
 
 
     def write_to_csv(self, tuple_list):

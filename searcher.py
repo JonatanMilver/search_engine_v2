@@ -18,7 +18,8 @@ class Searcher:
         self.config = indexer.config
         self._parser = parser
         self._indexer = indexer
-        self.number_of_docs, self.avg_length_per_doc = self.load_details()
+        # self.number_of_docs, self.avg_length_per_doc = self.load_details()
+        self.number_of_docs = indexer.num_of_docs
         self._model = model
 
         # self.document_dict = utils.load_dict("documents_dict", self.config.get_out_path())
@@ -26,8 +27,10 @@ class Searcher:
 
         self.term_to_indices = {}
         self.glove_dict = self._indexer.glove_dict
-
-        self.ranker = Ranker(self.config)
+        useGlove = True
+        if len(self.glove_dict) == 0:
+            useGlove = False
+        self.ranker = Ranker(self.config, useGlove)
 
     def load_details(self):
         dits = utils.load_dict('details', self.config.get_out_path())
@@ -48,9 +51,9 @@ class Searcher:
             and the last is the least relevant result.
         """
 
-        query_as_list = self._parser.parse_sentence(query)
+        # query_as_list = self._parser.parse_sentence(query)
 
-        relevant_docs, query_glove_vec, square_w_iq = self.relevant_docs_from_posting(query_as_list[0])
+        relevant_docs, query_glove_vec, square_w_iq = self.relevant_docs_from_posting(query)
 
         ranked_docs = self.ranker.rank_relevant_doc(relevant_docs, query_glove_vec, square_w_iq)
 
@@ -102,8 +105,8 @@ class Searcher:
 
         query_glove_vec /= len(query_as_list)
 
-        # p = 0.35
-        p = 0
+        p = 0.2
+        # p = 0
         min_num_of_words_to_relevent = int(len(query_as_list) * p)
         pre_doc_dict = {}
         pre_doc_dict_counter = Counter()
@@ -112,7 +115,13 @@ class Searcher:
         w_iq_square = 0
         for term, term_indices in self.term_to_indices.items():
 
-            term_tf_idf = ((len(term_indices)/len(query_as_list))*self.calc_idf(term))
+            # term_tf_idf = ((len(term_indices)/len(query_as_list))*self.calc_idf(term))
+            term_tf_idf = (len(term_indices)/len(query_as_list))
+            # term_tf_idf = 1
+            # if term not in self.inverted_index:
+            #     term_tf_idf = 0
+
+
 
             w_iq_square += math.pow(term_tf_idf, 2)
 
@@ -129,7 +138,7 @@ class Searcher:
                             # [[tf1, tf2...]
                             #  [idf1, idf2...]]
                             tf_idf_numarator = 0
-                            tf_idf_denomenator = self.document_dict[tweet_id][1]
+                            tf_idf_denomenator = math.sqrt(self.document_dict[tweet_id][1])
                             tweet_doc_length = self.inverted_index.get_doc_length(term, tweet_id)
                             glove_vec = self.document_dict[tweet_id][0]
                             tweet_date = self.inverted_index.get_tweet_date(term, tweet_id)
@@ -192,7 +201,7 @@ class Searcher:
         # to calc idf
         n = self.number_of_docs
         # df = term_data[0]
-        if term not  in self.inverted_index:
+        if term not in self.inverted_index:
             return 0
         df = self.inverted_index[term][0]
         idf = math.log10(n / df)
