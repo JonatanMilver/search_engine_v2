@@ -25,7 +25,7 @@ class Searcher:
         # self.document_dict = utils.load_dict("documents_dict", self.config.get_out_path())
         self.inverted_index, self.document_dict = self._indexer.load_index("idx_engine1.pkl")
 
-        self.term_to_indices = {}
+        # self.term_to_indices = {}
         self.glove_dict = self._indexer.glove_dict
         useGlove = True
         if len(self.glove_dict) == 0:
@@ -69,6 +69,8 @@ class Searcher:
         :return: dictionary of relevant documents mapping doc_id to document frequency.
         """
 
+        term_to_indices = {}
+        max_tf = 0
         query_glove_vec = np.zeros(shape=25)
 
         for idx, term in enumerate(query_as_list):
@@ -78,11 +80,12 @@ class Searcher:
             try:
                 if term in self.inverted_index:
 
-                    if term not in self.term_to_indices:
+                    if term not in term_to_indices:
 
                         idx_set = {idx}
-                        self.term_to_indices[term] = idx_set
-
+                        if len(idx_set) > max_tf:
+                            max_tf = len(idx_set)
+                        term_to_indices[term] = idx_set
                         # for i in range(idx + 1, len(
                         #         query_as_list)):  # check if any other terms in query are the same posting to avoid loading it more than once
                         #     if query_as_list[i] in curr_posting:
@@ -91,12 +94,15 @@ class Searcher:
                         #         self.term_to_doclist[query_as_list[i]] = [idx_set, doc_list]
 
                     else:  # term already in term dict, so only update it's index list
-                        self.term_to_indices[term].add(idx)
+                        term_to_indices[term].add(idx)
+                        if len(term_to_indices[term]) > max_tf:
+                            max_tf = len(term_to_indices[term])
 
-                else:  # term is un-known, so
-                    # doc_list = None
+                else:  # term is un-known
                     idx_set = {idx}
-                    self.term_to_indices[term] = idx_set
+                    if len(idx_set) > max_tf:
+                        max_tf = len(idx_set)
+                    term_to_indices[term] = idx_set
 
             except:
                 print('term {} not found in inverted index'.format(term))
@@ -105,21 +111,21 @@ class Searcher:
 
         query_glove_vec /= len(query_as_list)
 
-        p = 0.2
-        # p = 0
+        # p = 0.2
+        p = 0
         min_num_of_words_to_relevent = int(len(query_as_list) * p)
         pre_doc_dict = {}
         pre_doc_dict_counter = Counter()
 
         relevant_docs = {}
         w_iq_square = 0
-        for term, term_indices in self.term_to_indices.items():
+        for term, term_indices in term_to_indices.items():
 
             # term_tf_idf = ((len(term_indices)/len(query_as_list))*self.calc_idf(term))
-            term_tf_idf = (len(term_indices)/len(query_as_list))
-            # term_tf_idf = 1
-            # if term not in self.inverted_index:
-            #     term_tf_idf = 0
+            # term_tf_idf = (len(term_indices)/max_tf)inde
+            term_tf_idf = 1
+            if term not in self.inverted_index:
+                term_tf_idf = 0
 
 
 
