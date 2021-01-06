@@ -8,10 +8,10 @@ from searcher import Searcher
 import utils
 import numpy as np
 import pandas as pd
-from wordnet import Wordnet
+from thesaurus import ThesaurusModel
 
 
-# Wordnet
+# Thesaurus
 class SearchEngine:
     # glove_dict = {}
     # model = None
@@ -95,7 +95,7 @@ class SearchEngine:
             self._indexer.add_new_doc(parsed_document)
 
         tuple_to_save = self._indexer.fix_inverted_index()
-        utils.save_pickle_tuple(tuple_to_save, 'idx_engine2', self._config.get_out_path())
+        utils.save_pickle_tuple(tuple_to_save, 'idx_engine3', self._config.get_out_path())
 
         print('Finished parsing and indexing.')
 
@@ -147,14 +147,14 @@ class SearchEngine:
         searcher = Searcher(self._parser, self._indexer, model=self.model)
         # TODO check about K
         query_as_list = self._parser.parse_sentence(query)
+        # thesaurus_model = ThesaurusModel()
         list_copy = list(query_as_list[0])
         tagged_words = pos_tag(list_copy)
         # for word in query_as_list[0]:
         for word in tagged_words:
-            wn_tag = Wordnet.get_wordnet_pos(word[1])
-            synonym = Wordnet.get_closest_term(word[0], wn_tag)
+            synonym = ThesaurusModel.get_synonym(word)
             if synonym is not None:
-                list_copy.append(synonym)
+                list_copy.extend(synonym)
         l_res = searcher.search(list_copy)
         t_ids = [tup[1] for tup in l_res]
         return len(l_res), t_ids

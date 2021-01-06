@@ -60,9 +60,6 @@ class Ranker:
         :param k: Number of top document to return
         :return: list of relevant document
         """
-        print()
-        # if k is None:
-        #     return sorted_relevant_doc
 
         if k is None or k > len(sorted_relevant_doc):
             return sorted(sorted_relevant_doc, key=lambda x: (x[0], x[2]), reverse=True)
