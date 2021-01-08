@@ -13,7 +13,8 @@ import pandas as pd
 # By GloVe Method
 class SearchEngine:
     GLOVE_PATH_SERVER = '../../../../glove.twitter.27B.25d.txt'
-    GLOVE_PATH_LOCAL = 'glove.twitter.27B.25d.txt'
+    # GLOVE_PATH_LOCAL = 'glove.twitter.27B.25d.txt'
+    GLOVE_PATH_LOCAL = '.model/model.txt'
     # glove_dict = {}
     model = None
     def __init__(self, config=None):

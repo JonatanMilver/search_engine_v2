@@ -61,6 +61,7 @@ class Indexer:
                 self.inverted_idx.insert(term, document.tweet_id, document.doc_length,
                                          document.max_tf, document.unique_terms,
                                          document_dictionary[term]/document.doc_length, document_date)
+                                         # document_dictionary[term]/document.max_tf, document_date)
 
             except:
                 print('problem with the following key {}'.format(term))
@@ -123,7 +124,7 @@ class Indexer:
                 term = term.upper()
                 self.inverted_idx.insert_entry(term, term_info)
                 # TODO check the amount of min df
-            if term in self.inverted_idx.main_dict and self.inverted_idx.get_df(term) < 0:
+            if term in self.inverted_idx.main_dict and self.inverted_idx.get_df(term) < 2:
                 should_append = False
                 self.inverted_idx.remove(term)
             if should_append:

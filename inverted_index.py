@@ -2,7 +2,7 @@
 
 class InvertedIndex:
     def __init__(self):
-        # {term: [df, {tweet_id: [doc_length, max_tf, number_of_unique_terms, tf_idf, cosine_tweet_denom, tweet_date]]}}
+        # {term: [df, {tweet_id: [doc_length, max_tf, number_of_unique_terms, tf_idf, tweet_date]]}}
         self.main_dict = {}
 
     def __getitem__(self, term):

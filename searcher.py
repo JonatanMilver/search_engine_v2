@@ -112,6 +112,7 @@ class Searcher:
         query_glove_vec /= len(query_as_list)
 
         p = 0.67
+        # p = 0.6
         # p = 0
         min_num_of_words_to_relevent = int(len(query_as_list) * p)
         pre_doc_dict = {}
@@ -122,10 +123,8 @@ class Searcher:
         for term, term_indices in term_to_indices.items():
 
             term_tf_idf = ((len(term_indices)/len(query_as_list))*self.calc_idf(term))
-            # term_tf_idf = (len(term_indices)/max_tf)inde
-            # term_tf_idf = 1
-            # if term not in self.inverted_index:
-            #     term_tf_idf = 0
+            # term_tf_idf = ((len(term_indices)/max_tf)*self.calc_idf(term))
+
 
 
 

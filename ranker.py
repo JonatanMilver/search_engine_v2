@@ -26,17 +26,7 @@ class Ranker:
 
         ret = []
         key_list = list(relevant_doc.keys())
-        # for tweet_id, tuple_vec_doclength in relevant_doc.items():
         for idx, tweet_id in enumerate(key_list):
-            # list_tfidf_doclength = relevant_doc[tweet_id]
-
-            # if tweet_id not in self.loaded_doc_postings:
-            #     loaded_dict = utils.load_dict(self.document_dict[tweet_id][0], self.config.get_out_path())
-            #     # self.loaded_doc_postings[self.document_dict[tweet_id]] = loaded_dict
-            #     self.loaded_doc_postings[tweet_id] = loaded_dict[tweet_id]
-            #     for i in range(idx+1, len(key_list)):
-            #         if key_list[i] in loaded_dict:
-            #             self.loaded_doc_postings[key_list[i]] = loaded_dict[key_list[i]]
 
             # holds sigma w_ij*w_iq
             sigma_weights_query_doc = relevant_doc[tweet_id][0]

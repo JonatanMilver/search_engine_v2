@@ -14,7 +14,8 @@ from thesaurus import ThesaurusModel
 # BEST
 class SearchEngine:
     GLOVE_PATH_SERVER = '../../../../glove.twitter.27B.25d.txt'
-    GLOVE_PATH_LOCAL = 'glove.twitter.27B.25d.txt'
+    # GLOVE_PATH_LOCAL = 'glove.twitter.27B.25d.txt'
+    GLOVE_PATH_LOCAL = '.model/model.txt'
     # glove_dict = {}
     model = None
     def __init__(self, config=None):
@@ -164,12 +165,13 @@ class SearchEngine:
         for word in tagged_words:
             wn_tag = Wordnet.get_wordnet_pos(word[1])
             synonym = Wordnet.get_closest_term(word[0], wn_tag)
-            if synonym is not None:
+            if synonym is not None and synonym in self._indexer.inverted_idx:
                 list_copy.append(synonym)
-            synonym = ThesaurusModel.get_synonym(word)
-            if synonym is not None:
-                list_copy.extend(synonym)
-        l_res = searcher.search(query_as_list[0])
+
+            # synonym = ThesaurusModel.get_synonym(word)
+            # if synonym is not None:
+            #     list_copy.append(synonym)
+        l_res = searcher.search(list_copy)
         t_ids = [tup[1] for tup in l_res]
         return len(l_res), t_ids
 

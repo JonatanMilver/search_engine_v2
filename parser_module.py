@@ -6,6 +6,7 @@ from document import Document
 import re
 from datetime import datetime
 from stemmer import Stemmer
+import pandas as pd
 
 
 class Parse:
@@ -145,6 +146,10 @@ class Parse:
             return None
         dict_list = [url, retweet_url, quote_url, retweet_quoted_url]
         max_tf = 0
+
+        # if tweet_id in [1291243586835472384, 1291188776493080576, 1291180630315868162, 1291329776444112902, 1291356400829038592]:
+        #     print()
+
 
         urls_set = set()
         try:
