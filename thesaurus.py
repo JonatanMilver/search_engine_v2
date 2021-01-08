@@ -6,6 +6,11 @@ class ThesaurusModel:
         pass
     @staticmethod
     def get_synonym(word):
+        """
+        finds term's synonym using lin thesaurus
+        :param word:
+        :return:
+        """
         synonyms_types = lt.synonyms(word[0])
         pos_tag = word[1]
         if pos_tag.startswith('J'):

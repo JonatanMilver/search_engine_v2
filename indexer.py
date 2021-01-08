@@ -20,7 +20,6 @@ class Indexer:
         self.config = config
         self.glove_dict = {}
 
-
     # DO NOT MODIFY THIS SIGNATURE
     # You can change the internal implementation as you see fit.
     def add_new_doc(self, document):

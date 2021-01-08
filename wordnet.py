@@ -4,6 +4,7 @@ from nltk.corpus import wordnet as wn
 class Wordnet:
     def __init__(self):
         pass
+
     @staticmethod
     def get_closest_term(term, wn_tag):
         try:
@@ -14,6 +15,7 @@ class Wordnet:
             return None
         except:
             return None
+
     @staticmethod
     def get_wordnet_pos(treebank_tag):
         """
@@ -29,16 +31,5 @@ class Wordnet:
             return wn.ADV
         else:
             return wn.NOUN
-
-    # def get_closest_term(self, term):
-    #     synset = wn.synsets(term)
-    #     try:
-    #         for syn in synset:
-    #             for lemm in syn.lemmas():
-    #                 if term.lower() != lemm.name().lower():
-    #                     return lemm.name()
-    #         return None
-    #     except:
-    #         return None
 
 

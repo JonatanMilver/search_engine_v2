@@ -20,6 +20,7 @@ class Parse:
     NON_LATIN_PATTERN = re.compile(
         pattern=r'[^\x00-\x7F\x80-\xFF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\u2019]')
     HASHTAG_SPLIT_PATTERN = re.compile(r'[a-zA-Z0-9](?:[a-z0-9]+|[A-Z0-9]*(?=[A-Z]|$))')
+    COVID_DICT = {'covid': None, 'covid-19': None, 'coronavirus': None, 'covid19': None, 'chinavirus': None}
 
     def __init__(self, stemming):
         self.stop_words = stopwords.words('english')
@@ -27,7 +28,7 @@ class Parse:
             ['rt', '“', r'’', r'n\'t', 'n\'t', '\'s', r'\'s', r'\'ve', r'\'m', '...', r'\'\'', r'\'d', '&', r'\'ll', r'\'re',
              r' ', r'', r"", r"''", r'""', r'"', r"“", "”", r"’", "‘", r"``", '``', r"'", r"`",
              r'!', r'?', r',', r':', r';', r'(', r')', r'...', r'[', ']', r'{', '}' "'&'", '.', r'\'d',
-             '-', '--','covid', '19', 'covid-19', 'mask', 'coronavirus', 'pandemic', 'people', 'wear', 'trump', 'covid19', 'masks', 'new', 'virus', 'wearing', 'cases', 'amp', '#covid19', 'us', 'like'])
+             '-', '--'])
         # , 'covid', '19', 'covid-19', 'mask', 'coronavirus', 'pandemic', 'people', 'wear', 'trump', 'covid19', 'masks', 'new', 'virus', 'wearing', 'cases', 'amp', '#covid19', 'us', 'like'
         self.stop_words_dict = dict.fromkeys(self.stop_words)
 
@@ -64,6 +65,9 @@ class Parse:
             c1 = token[0]
             if (ord(c1) < 48 or 57 < ord(c1) < 65 or 90 < ord(c1) < 97 or 122 < ord(c1)) and c1 != '#':
                 continue
+            if token in self.COVID_DICT:
+                tokenized_list.append('covid')
+                continue
 
             if len(token) > 0 and token[0].isupper():
                 # chunks entities together.
@@ -80,8 +84,6 @@ class Parse:
 
             if token == '#':
                 self.handle_hashtags(tokenized_list, idx)
-            # elif token == '@':
-            #     self.handle_tags(tokenized_list, idx)
             elif self.is_fraction(token):
                 self.handle_fraction(tokenized_list, token, idx)
             elif token in ["%", "percent", "percentage"]:

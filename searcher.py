@@ -18,23 +18,16 @@ class Searcher:
         self.config = indexer.config
         self._parser = parser
         self._indexer = indexer
-        # self.number_of_docs, self.avg_length_per_doc = self.load_details()
         self.number_of_docs = indexer.num_of_docs
         self._model = model
+        # self.inverted_index, self.document_dict = self._indexer.load_index("idx_engine1.pkl")
+        self.inverted_index, self.document_dict = self._indexer.inverted_idx, self._indexer.document_dict
 
-        # self.document_dict = utils.load_dict("documents_dict", self.config.get_out_path())
-        self.inverted_index, self.document_dict = self._indexer.load_index("idx_engine1.pkl")
-
-        # self.term_to_indices = {}
         self.glove_dict = self._indexer.glove_dict
-        useGlove = True
+        use_glove = True
         if len(self.glove_dict) == 0:
-            useGlove = False
-        self.ranker = Ranker(self.config, useGlove)
-
-    def load_details(self):
-        dits = utils.load_dict('details', self.config.get_out_path())
-        return  dits['number_of_documents'], dits['avg_length_per_doc']
+            use_glove = False
+        self.ranker = Ranker(self.config, use_glove)
 
     # DO NOT MODIFY THIS SIGNATURE
     # You can change the internal implementation as you see fit.
@@ -50,13 +43,8 @@ class Searcher:
             a list of tweet_ids where the first element is the most relavant 
             and the last is the least relevant result.
         """
-
-        # query_as_list = self._parser.parse_sentence(query)
-
         relevant_docs, query_glove_vec, square_w_iq = self.relevant_docs_from_posting(query)
-
         ranked_docs = self.ranker.rank_relevant_doc(relevant_docs, query_glove_vec, square_w_iq)
-
         top_k = self.ranker.retrieve_top_k(ranked_docs, k)
         return top_k
 
@@ -86,12 +74,6 @@ class Searcher:
                         if len(idx_set) > max_tf:
                             max_tf = len(idx_set)
                         term_to_indices[term] = idx_set
-                        # for i in range(idx + 1, len(
-                        #         query_as_list)):  # check if any other terms in query are the same posting to avoid loading it more than once
-                        #     if query_as_list[i] in curr_posting:
-                        #         doc_list = curr_posting[query_as_list[i]]
-                        #         idx_set = {i}
-                        #         self.term_to_doclist[query_as_list[i]] = [idx_set, doc_list]
 
                     else:  # term already in term dict, so only update it's index list
                         term_to_indices[term].add(idx)
@@ -107,13 +89,9 @@ class Searcher:
             except:
                 print('term {} not found in inverted index'.format(term))
 
-
-
         query_glove_vec /= len(query_as_list)
 
-        p = 0.67
-        # p = 0.6
-        # p = 0
+        p = 0.45
         min_num_of_words_to_relevent = int(len(query_as_list) * p)
         pre_doc_dict = {}
         pre_doc_dict_counter = Counter()
@@ -123,11 +101,6 @@ class Searcher:
         for term, term_indices in term_to_indices.items():
 
             term_tf_idf = ((len(term_indices)/len(query_as_list))*self.calc_idf(term))
-            # term_tf_idf = ((len(term_indices)/max_tf)*self.calc_idf(term))
-
-
-
-
             w_iq_square += math.pow(term_tf_idf, 2)
 
             try:
@@ -135,9 +108,7 @@ class Searcher:
                 if term in self.inverted_index:
                     # for doc_tuple in doc_list.items():
                     for tweet_id in self.inverted_index[term][1]:
-
                         pre_doc_dict_counter[tweet_id] += 1
-
                         if tweet_id not in pre_doc_dict:
                             # example - > tf_idf_vec
                             # [[tf1, tf2...]
@@ -173,18 +144,6 @@ class Searcher:
         tf = frequency_term_in_doc / num_of_terms_in_doc
 
         return tf
-
-    # def calculate_idf(self, term_data):
-    #     """
-    #     calculates idf of term
-    #     :param term_data: term information
-    #     :return:
-    #     """
-    #     # to calc idf
-    #     n = self.number_of_docs
-    #     df = term_data[0]
-    #     idf = math.log10(n / df)
-    #     return idf
 
     def calculate_idf_BM25(self, term_data):
         """

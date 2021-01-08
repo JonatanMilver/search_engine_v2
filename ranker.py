@@ -50,7 +50,6 @@ class Ranker:
         :param k: Number of top document to return
         :return: list of relevant document
         """
-
         if k is None or k > len(sorted_relevant_doc):
             return sorted(sorted_relevant_doc, key=lambda x: (x[0], x[2]), reverse=True)
 
@@ -73,30 +72,12 @@ class Ranker:
             w_cos_weight = 1
             glove_weight = 0
 
-
         word_cosine = w_cos_weight * self.cosine(sigma_weights_query_doc, sqaure_w_iq, tweet_part_denominator_cosine)
-        # bm25_score = bm25_weight * self.calc_BM25(bm25_vec, doc_length)
         glove_cosine = glove_weight * self.glove_cosine(glove_vec, query_glove_vec)
 
         score = word_cosine + glove_cosine
 
-        # if score > 0.85:
-        # print("{} : word cosine: {} , glove cosine: {}, total score {}".format(tweet_id,word_cosine,glove_cosine, score))
-
         return score
-
-    # def calc_BM25(self, vec, doc_length):
-    #     # BM25 score calculation
-    #     score = 0
-    #     k = 1.2
-    #     b = 0.75
-    #     for column in vec.T:
-    #         idf = column[1]
-    #         tf = column[0]
-    #
-    #         score += (idf * tf * (k + 1)) / (tf + k * (1 - b + b * (doc_length / self.avg_length_per_doc)))
-    #
-    #     return score
 
     def cosine(self, numerator, query_part_denominator, tweet_part_denominator):
         denominator = query_part_denominator * tweet_part_denominator
