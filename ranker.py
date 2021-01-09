@@ -66,8 +66,8 @@ class Ranker:
         :return: calculated score of similarity between the represented tweet and the query
         """
         if self.useGlove:
-            w_cos_weight = 0.8
-            glove_weight = 0.2
+            w_cos_weight = 0.4
+            glove_weight = 0.6
         else:
             w_cos_weight = 1
             glove_weight = 0

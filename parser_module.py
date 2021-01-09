@@ -20,7 +20,7 @@ class Parse:
     NON_LATIN_PATTERN = re.compile(
         pattern=r'[^\x00-\x7F\x80-\xFF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\u2019]')
     HASHTAG_SPLIT_PATTERN = re.compile(r'[a-zA-Z0-9](?:[a-z0-9]+|[A-Z0-9]*(?=[A-Z]|$))')
-    COVID_DICT = {'covid': None, 'covid-19': None, 'coronavirus': None, 'covid19': None, 'chinavirus': None}
+    COVID_DICT = {'covid': None, 'covid-19': None, 'coronavirus': None, 'covid19': None, 'chinavirus': None, '#covid19': None}
 
     def __init__(self, stemming):
         self.stop_words = stopwords.words('english')
@@ -28,7 +28,7 @@ class Parse:
             ['rt', '“', r'’', r'n\'t', 'n\'t', '\'s', r'\'s', r'\'ve', r'\'m', '...', r'\'\'', r'\'d', '&', r'\'ll', r'\'re',
              r' ', r'', r"", r"''", r'""', r'"', r"“", "”", r"’", "‘", r"``", '``', r"'", r"`",
              r'!', r'?', r',', r':', r';', r'(', r')', r'...', r'[', ']', r'{', '}' "'&'", '.', r'\'d',
-             '-', '--'])
+             '-', '--',  'mask', 'pandemic', 'people', 'wear', 'trump', 'masks', 'new', 'virus', 'wearing', 'cases', 'amp', 'us', 'like'])
         # , 'covid', '19', 'covid-19', 'mask', 'coronavirus', 'pandemic', 'people', 'wear', 'trump', 'covid19', 'masks', 'new', 'virus', 'wearing', 'cases', 'amp', '#covid19', 'us', 'like'
         self.stop_words_dict = dict.fromkeys(self.stop_words)
 
