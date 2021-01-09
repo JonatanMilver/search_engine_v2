@@ -4,25 +4,19 @@ import os
 class ConfigClass:
     # def __init__(self, corpus_path='', output_path='', stemming=False):
     def __init__(self):
-        # self.corpusPath = corpus_path
+        self.corpusPath = ''
         # self.corpusPath = "C:\\Users\\yonym\\Desktop\\ThirdYear\\IR\\engineV1\\Data\\date=07-27-2020\\covid19_07-27.snappy.parquet"
-        self.corpusPath = r"C:\Users\Guyza\OneDrive\Desktop\Information_Systems\University\Third_year\Semester_E\Information_Retrieval\Search_Engine_Project\Data\Data\date=07-27-2020\covid19_07-27.snappy.parquet"
-
-        # try:
-        #     os.mkdir(output_path)
-        # except:
-        #     pass
-        # self.savedFileMainFolder = output_path
+        # self.corpusPath = r"C:\Users\Guyza\OneDrive\Desktop\Information_Systems\University\Third_year\Semester_E\Information_Retrieval\Search_Engine_Project\Data\Data\date=07-27-2020\covid19_07-27.snappy.parquet"
 
         # link to a zip file in google drive with your pretrained model
-        self._model_url = 'https://drive.google.com/file/d/16llkcsNXYpjIWA5BqP9kqiJ1C_cMVzCe/view?usp=sharing'
+        self._model_url = 'https://drive.google.com/file/d/1QtZSOQeWJ5uYAHEG_KbBdFylKnLlprif/view?usp=sharing'
         # False/True flag indicating whether the testing system will download
         # and overwrite the existing model files. In other words, keep this as
         # False until you update the model, submit with True to download
         # the updated model (with a valid model_url), then turn back to False
         # in subsequent submissions to avoid the slow downloading of the large
         # model file with every submission.
-        self._download_model = False
+        self._download_model = True
 
         # self.corpusPath = ''
         self.savedFileMainFolder = ''
